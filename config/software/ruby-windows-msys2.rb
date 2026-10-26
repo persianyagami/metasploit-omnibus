@@ -15,7 +15,7 @@
 #
 
 name "ruby-windows-msys2"
-default_version "20180531"
+default_version "20250221"
 
 license "BSD-3-Clause"
 license_file "https://raw.githubusercontent.com/Alexpux/MSYS2-packages/master/LICENSE"
@@ -31,6 +31,36 @@ else
   version "20180531" do
     source url: "http://repo.msys2.org/distrib/x86_64/msys2-base-x86_64-#{version}.tar.gz",
            md5: "f7ff799d6bb4dcc68c810a6f20d12002"
+    relative_path "msys64"
+  end
+  version "20200903" do
+    # file has to be decompressed from local cache using xz before build executes
+    source url: "https://repo.msys2.org/distrib/x86_64/msys2-base-x86_64-#{version}.tar",
+           sha256: "4507c02cf6c6e4f3de236a89b33e386a396b28ca1c57ad499740d1a7679685d8"
+    relative_path "msys64"
+  end
+  version "20210604" do
+    # file has to be decompressed from local cache using xz before build executes
+    source url: "https://repo.msys2.org/distrib/x86_64/msys2-base-x86_64-#{version}.tar",
+           sha256: "8738e8f0d3e096a8bf581f9ceb674afdcc2fe3202dd1d69f39d9b8d7e3a5e099"
+    relative_path "msys64"
+  end
+  version "20220118" do
+    # file has to be decompressed from local cache using xz before build executes
+    source url: "https://repo.msys2.org/distrib/x86_64/msys2-base-x86_64-#{version}.tar",
+           sha256: "f4f428797a285d29225aebd535d83a4f530fdc3870d8b0a8afa784532472e19d"
+    relative_path "msys64"
+  end
+  version "20220603" do
+    # file has to be decompressed from local cache using xz before build executes
+    source url: "https://repo.msys2.org/distrib/x86_64/msys2-base-x86_64-#{version}.tar",
+           sha256: "39e476b45b7ca39567afd341146af68ed53b89b09c90d285988367ec5c5ecc11"
+    relative_path "msys64"
+  end
+  version "20250221" do
+    # file has to be decompressed from local cache using xz before build executes
+    source url: "https://repo.msys2.org/distrib/x86_64/msys2-base-x86_64-#{version}.tar",
+           sha256: "cf7bd3ecb4f79eaa58ac794dba3cca15581465b9d92cec59ae4bd99fde74c8a0"
     relative_path "msys64"
   end
 end

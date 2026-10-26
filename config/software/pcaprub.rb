@@ -15,7 +15,7 @@
 #
 
 name "pcaprub"
-default_version "0.12.4"
+default_version "0.13.3"
 
 if windows?
   dependency "ruby-windows"
@@ -26,10 +26,38 @@ else
   dependency "libpcap"
 end
 
+dependency "cacerts"
 dependency "rubygems"
 
 build do
+  # Skip pcaprub support for now as it causes compilation issues
+  next if windows?
+
   env = with_standard_compiler_flags(with_embedded_path)
-  gem "install pcaprub" \
-    " --version '#{version}' --no-document", env: env
+  env['SSL_CERT_FILE'] = "#{install_dir}/embedded/ssl/cert.pem"
+  # Ignore:
+  # pcaprub.c: In function 'rbpcap_each_data':
+  # pcaprub.c:987:17: error: implicit declaration of function 'pcap_getevent'; did you mean 'pcap_geterr'? [-Wimplicit-function-declaration]
+  #   987 |   fno = (HANDLE)pcap_getevent(rbp->pd);
+  #       |                 ^~~~~~~~~~~~~
+  #       |                 pcap_geterr
+  # pcaprub.c:987:9: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+  #   987 |   fno = (HANDLE)pcap_getevent(rbp->pd);
+  #       |         ^
+  # pcaprub.c: In function 'rbpcap_each_packet':
+  # pcaprub.c:1029:9: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+  #  1029 |   fno = (HANDLE)pcap_getevent(rbp->pd);
+  cflags = "-Wno-int-to-pointer-cast -Wno-implicit-function-declaration"
+
+  # Use version of pcaprub relative to the current directory if it exists
+  local_pcaprub_checkout = File.expand_path(File.join(Dir.pwd, "..", "pcaprub"))
+  command "echo checking for path: #{local_pcaprub_checkout}", env: env
+  if File.exist?(local_pcaprub_checkout)
+    gem "install --local #{local_pcaprub_checkout}/pkg/pcaprub-#{version}.gem", env: env
+    command "echo after new pcaprub code", env: env
+  else
+    command "echo before old pcaprub code", env: env
+    gem "install pcaprub" \
+      " --version '#{version}' --no-document -- --with-cflags=\'#{cflags}\'", env: env
+  end
 end

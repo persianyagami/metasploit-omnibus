@@ -1,41 +1,114 @@
 name "metasploit-framework"
+
+# Detect a local checkout of metasploit-framework at '../metasploit-framework' - i.e. for the scenario of:
+# - c:/temp/metasploit-omnibus
+# - c:/temp/metasploit-framework (A local checkout of framework to use during the build process)
+# but try and use 'C:/metasploit-framework' - as that's the metasploit-omnibus artifacts output directory
+def has_windows_metasploit_framework_repo?
+  windows? && File.exist?('../metasploit-framework') && File.expand_path(File.join(Dir.pwd, "..", "metasploit-framework")) != "c:/metasploit-framework"
+end
+
 if linux? && File.exist?("/metasploit-framework")
   # supply current version of metasploit-framework at root of filesystem
   source path: "/metasploit-framework"
+elsif has_windows_metasploit_framework_repo?
+  # supply current version of metasploit-framework relative to the current directory
+  source path: "../metasploit-framework"
 else
   source git: "https://github.com/rapid7/metasploit-framework.git"
   default_version "master"
 end
 
+dependency "cacerts"
 dependency "bundler"
 dependency "pcaprub"
 if windows?
   dependency "postgresql-windows"
-  dependency "sqlite3-gem"
-  sqlite3_gem_version = "-v 1.3.13"
 else
   dependency "liblzma"
   dependency "libxslt"
   dependency "ruby"
   dependency "postgresql"
-  dependency "sqlite"
 end
 
+ruby_abi_version = "3.4.0"
 # This depends on extra system libraries on OS X
 whitelist_file "#{install_dir}//embedded/framework/data/isight.bundle"
 
-# Files in this path are currently attached to exploits and required `bad` binaries
+# Files in this path are currently attached to exploits and do not need to pass system-specific omnibus health checks
+whitelist_file "#{install_dir}/embedded/framework/data/exploits/.*"
 whitelist_file "#{install_dir}//embedded/framework/data/exploits/.*"
 
-# This depends on libfuse
-whitelist_file "#{install_dir}/embedded/framework/data/exploits/CVE-2016-4557/hello"
+# This depends on Openssl 3.x
+whitelist_file "#{install_dir}/embedded/lib/ruby/gems/#{ruby_abi_version}/gems/metasploit-payloads.*"
 
-# This depends on Openssl 1.x
-whitelist_file "#{install_dir}/embedded/lib/ruby/gems/2.3.0/gems/metasploit-payloads.*"
+# Also whitelist mettle
+whitelist_file "#{install_dir}//embedded/lib/ruby/gems/#{ruby_abi_version}/gems/metasploit_payloads.*"
+
+# Also whitelist sqlite deps too as libz is provided just not first on path
+whitelist_file "#{install_dir}/embedded/lib/ruby/gems/#{ruby_abi_version}/gems/sqlite3-.*"
+whitelist_file "#{install_dir}//embedded/lib/ruby/gems/#{ruby_abi_version}/.*/sqlite3.*"
 
 build do
-  copy "#{project_dir}", "#{install_dir}/embedded/framework"
+  patch_env = with_standard_compiler_flags(with_embedded_path)
+  block 'Patch Gem dependencies' do
+    # Skipping gem dependencies
+    ['metasploit-framework.gemspec', 'Gemfile', 'Gemfile.lock'].each do |gemfile|
+      # Remove problematic linux dependencies that require newer GCC versions that aren't currently supported on CI build envs
+      skipped_dependencies = [
+        'ruby-prof',
+        'memory_profiler',
+        'license_finder',
+      ]
+      replacements = {
+        'stringio (= 3.1.1)' => 'stringio (= 3.1.2)',
+        'stringio (3.1.1)' => 'stringio (3.1.2)',
+        "spec.add_runtime_dependency 'stringio', '3.1.1'" => "spec.add_runtime_dependency 'stringio', '3.1.2'"
+      }
+      # Remove problematic dependencies for Windows; Fiddle will need to be re-added in a future build for Ruby 3.3 support
+      if windows?
+        skipped_dependencies += [
+          'ffi (< 1.17.0)',
+          'ffi (1.16.3)',
+          "spec.add_runtime_dependency 'ffi', '< 1.17.0'",
+          'fiddle',
+          'packetfu',
+          'pcaprub'
+        ]
+      end
 
+      file_path = File.join(project_dir, gemfile)
+      old_file = File.binread(file_path)
+      lines = old_file.lines(chomp: true)
+
+      # For Gemfile.lock, we need to remove entire source blocks (GIT/PATH) that
+      # contain skipped gems, and individual lines from other sections
+      if gemfile == 'Gemfile.lock'
+        blocks = old_file.split(/\r?\n\r?\n/)
+        new_content = blocks.filter_map do |block|
+          if block.start_with?('GIT', 'PATH')
+            # Drop entire source block if it contains a skipped gem
+            next nil if skipped_dependencies.any? { |dep| block.include?(dep) }
+            block
+          else
+            # Line-level filtering for DEPENDENCIES, GEM specs, etc.
+            filtered = block.lines(chomp: true).reject do |line|
+              skipped_dependencies.any? { |dep| line.include?(dep) }
+            end.join("\n")
+            filtered.empty? ? nil : filtered
+          end
+        end.join("\n\n")
+      else
+        new_content = lines.reject do |line|
+          skipped_dependencies.any? { |dep| line.include?(dep) }
+        end.join("\n")
+      end
+      replacements.each { |old, new| new_content = new_content.gsub(old, new) }
+
+      File.open(file_path, 'wb') { |f| f.puts(new_content) }
+    end
+  end
+  copy "#{project_dir}", "#{install_dir}/embedded/framework"
   major, minor, patch = Omnibus::BuildVersion.semver.split('.')
 
   erb source: 'version.yml.erb',
@@ -62,6 +135,7 @@ build do
   end
 
   env = with_standard_compiler_flags(with_embedded_path)
+  env['SSL_CERT_FILE'] = "#{install_dir}/embedded/ssl/cert.pem"
   unless windows?
     erb source: 'msfdb-kali.erb',
         dest: "#{install_dir}/embedded/framework/msfdb-kali",
@@ -69,18 +143,55 @@ build do
         vars: { install_dir: install_dir }
   end
 
-  bundle "install", env: env
+  bundle "version", env: env
+  bundle "config set force_ruby_platform true", env: env
+  bundle_env = with_standard_compiler_flags(with_embedded_path)
+  # Limit make parallelism on macOS to avoid a mini_portile2 race condition where
+  # parallel make subprocesses collide creating the sqlite3 ports directory during
+  # native extension compilation (Error 71: EEXIST).
+  bundle_env['MAKE'] = mac_os_x? ? 'make' : 'make -j4'
+  bundle_env['BUNDLE_FORCE_RUBY_PLATFORM'] = 'true'
+  bundle "install --jobs=4 --verbose", env: bundle_env
 
   if windows?
-    # Workaround missing Ruby 2.3 support for bcrypt on Windows
-    # https://github.com/codahale/bcrypt-ruby/issues/139
-    gem "uninstall bcrypt", env: env
-    gem "install bcrypt --no-document --platform=ruby", env: env
+    # Copy required runtime DLLs from MSYS2 ucrt64 to embedded/bin.
+    # Native gems (nokogiri, eventmachine, etc.) link against MSYS2's ucrt64
+    # libraries during bundle install. These DLLs must be available at runtime.
+    # We copy them to embedded/bin (which is in PATH) before deleting msys64.
+    msys_ucrt64_bin = "#{install_dir}/embedded/msys64/ucrt64/bin"
+    block "Copy MSYS2 runtime DLLs to embedded/bin" do
+      required_dlls = %w[
+        libxml2-2.dll
+        libiconv-2.dll
+        liblzma-5.dll
+        zlib1.dll
+        libintl-8.dll
+      ]
+      missing = []
+      required_dlls.each do |dll|
+        src = File.join(msys_ucrt64_bin, dll)
+        if File.exist?(src)
+          FileUtils.cp(src, "#{install_dir}/embedded/bin/#{dll}")
+        else
+          missing << src
+        end
+      end
+      raise "MSYS2 runtime DLLs not found:\n  #{missing.join("\n  ")}" if missing.any?
+    end
 
-    gem "uninstall sqlite3", env: env
-    gem "install sqlite3 #{sqlite3_gem_version} --no-document --platform=ruby", env: env
+    # Patch the pg gem's postgresql_lib_path.rb to disable add_dll_directory.
+    # The pg gem bakes in the compile-time absolute path to libpq which may not
+    # exist at runtime if the MSI installs to a different drive. Setting the path
+    # to false makes pg skip add_dll_directory and rely on the system PATH instead,
+    # where libpq.dll is available via embedded/bin.
+    block "Patch pg gem DLL path" do
+      pg_lib_path_file = Dir.glob("#{install_dir}/embedded/lib/ruby/gems/*/gems/pg-*/lib/pg/postgresql_lib_path.rb").first
+      if pg_lib_path_file
+        File.write(pg_lib_path_file, "module PG; POSTGRESQL_LIB_PATH = false; end\n")
+      end
+    end
 
-    delete "#{install_dir}/devkit"
+    delete "#{install_dir}/embedded/msys64"
   end
   copy "#{project_dir}/Gemfile.lock", "#{install_dir}/embedded/framework/Gemfile.lock"
 
@@ -147,6 +258,14 @@ build do
           end
         end
       end
+    end
+  end
+
+  # Workaround for a Windows bug with chef r7_9.0.23_custom that allows the `.git` folders through
+  # into the final build result, leading to the .exe being an extra 1gb in size
+  block do
+    self.project.exclusions.each do |exclusion|
+      Pathname(install_dir).glob(exclusion).each(&:rmtree)
     end
   end
 end

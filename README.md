@@ -1,17 +1,36 @@
 metasploit-framework Omnibus project
 ==========================
 This project creates full-stack platform-specific packages for
-`metasploit-framework`. This is not the same as the Metasploit Community
-edition. It only contains the framework command-line interface and the
+`metasploit-framework`. This is not the same as Metasploit Pro.
+It only contains the framework command-line interface and the
 associated tools and modules.
 
-Installing the package
-------------
+# Installing the package
 
 If you just want to install this package, we provide a number of pre-built binaries for Metasploit that are rebuilt every night. See https://github.com/rapid7/metasploit-framework/wiki/Nightly-Installers for installation information.
 
-Building the package
-------------
+# Developer Upgrade Guide
+
+If you are updating software dependencies you will need to:
+
+1. Verify if the software has been updated upstream https://github.com/chef/omnibus-software
+1. Download the build artifacts and merge into the artifact cache https://github.com/rapid7/metasploit-omnibus-cache
+1. Update the git submodule within as a [prerequisite][#Prerequisites]
+1. Modify the `default_version` and `SHA` for your software
+1. Apply any additional changes required to build your software using chef/omnibus-software as a baseline were appropriate
+1. Verify that the build works locally following the build steps below. If there are issues, cross-reference the Github actions configuration as an indicator for how to build locally
+1. Verify that the update works on CI
+
+If you are updating omnibus itself:
+
+1. Clone the latest Rapid7 fork and branch from https://github.com/rapid7/omnibus/branches/all which will be referenced in the `Gemfile` ([example](https://github.com/rapid7/metasploit-omnibus/blob/3e30801521fb50291708b2e93c0940afdd11df37/Gemfile#L5))
+1. Verify the latest available code from https://github.com/chef/omnibus
+1. Create a new R7 custom branch with the additional R7 custom patches applied
+1. Update the `Gemfile` to use your new branch - [example](https://github.com/rapid7/metasploit-omnibus/blame/master/Gemfile#L5)
+1. Apply any DSL changes to the software config files in the metasploit-omnibus repo, similar to steps required update software dependencies steps above
+1. Ensure CI passes
+
+# Building the package
 
 ## Prerequisites
 
@@ -26,7 +45,19 @@ You can build images yourself:
 ```shell
 git clone https://github.com/rapid7/metasploit-omnibus.git
 cd metasploit-omnibus
-docker build --tag metasploit-omnibus-builder - < ./docker/kali109-x64/Dockerfile
+docker build --tag metasploit-omnibus-builder - < ./docker/ubuntu1204-x86/Dockerfile
+```
+
+Or on OSX you can use the following script to build all images following the latest Docker image naming convention:
+
+```shell
+export BUILD_DATE=$(date "+%Y_%m"); ls ./docker | xargs -I IMAGE_NAME /bin/bash -x -c "docker build --tag rapid7/msf-IMAGE_NAME-omnibus:$BUILD_DATE -f ./docker/IMAGE_NAME/Dockerfile ./docker/IMAGE_NAME"
+```
+
+Pushing
+
+```shell
+export BUILD_DATE=$(date "+%Y_%m"); ls ./docker | xargs -I IMAGE_NAME /bin/bash -x -c "docker push rapid7/msf-IMAGE_NAME-omnibus:$BUILD_DATE"
 ```
 
 You can then run a new container using the above tagged image, whilst mounting the current directory as a volume:
@@ -38,7 +69,7 @@ docker run -it --rm --volume $(pwd):$(pwd) --workdir $(pwd) --user jenkins metas
 Or you can run a new container using pre-built images from [Rapid7's Docker Hub account](https://hub.docker.com/u/rapid7):
 
 ```shell
-docker run -it --rm --volume $(pwd):$(pwd) --workdir $(pwd) --user jenkins rapid7/msf-kali109-x64-omnibus:2019_01 /bin/bash --login
+docker run -it --rm --volume $(pwd):$(pwd) --workdir $(pwd) --user jenkins rapid7/msf-ubuntu1204-x86-omnibus:2024_04 /bin/bash --login
 ```
 
 By default, `metasploit-omnibus` will download the latest version of Metasploit framework from Github, but also supports building with local copies from `/metasploit-framework` - [full details](https://github.com/rapid7/metasploit-omnibus/blob/9cd575bcdd19d8fedf4a94c4ca2d1d6c253628c2/config/software/metasploit-framework.rb#L2-L8).
@@ -46,7 +77,7 @@ By default, `metasploit-omnibus` will download the latest version of Metasploit 
 To build omnibus with a local version of Metasploit framework, you can mount your framework repository as a volume to `/metasploit-framework` within the container. The following command assumes that the repository exists within the parent directory:
 
 ```shell
-docker run -it --rm --volume $(pwd):$(pwd) --volume=$(pwd)/../metasploit-framework:/metasploit-framework --workdir $(pwd) --user jenkins rapid7/msf-kali109-x64-omnibus:2019_01 /bin/bash --login
+docker run -it --rm --volume $(pwd):$(pwd) --volume=$(pwd)/../metasploit-framework:/metasploit-framework --workdir $(pwd) --user jenkins rapid7/msf-ubuntu1204-x86-omnibus:2024_04 /bin/bash --login
 ```
 
 When running inside the container, you can perform a normal ommibus build:
@@ -56,13 +87,24 @@ When running inside the container, you can perform a normal ommibus build:
 git submodule update -i
 
 # install omnibus' dependencies
-bundle install --binstubs
+bundle install
+bundle binstubs --all
 
 # build the metasploit-framework package
 bin/omnibus build metasploit-framework
 ```
 
-When complete, there will be a new installable .deb file under the 'pkg' directory. Note that the use of Docker volumes may cause builds to run slower. 
+When complete, there will be a new installable `.deb` file under the 'pkg' directory. Note that the use of Docker volumes may cause builds to run slower.
+
+To test the `.deb` file, install it - and then open msfconsole:
+
+```
+# install
+sudo dpkg -i pkg/metasploit-framework_6.3.39~20231017232715.git.3.47e0cd3~1rapid7-1_amd64.deb
+
+# Run to verify
+msfconsole
+```
 
 ## Building on Ubuntu / Debian systems
 
@@ -96,7 +138,7 @@ Checkout the metasploit-framework installer builder and install omnibus' depende
 git clone https://github.com/rapid7/metasploit-omnibus.git
 cd metasploit-omnibus
 # install omnibus' dependencies
-bundle install --binstubs
+bundle install && bundle binstubs --all
 ```
 
 Finally, build the installer itself:
@@ -105,6 +147,13 @@ Finally, build the installer itself:
 bin/omnibus build metasploit-framework
 ```
 when complete, there will be a new installable .deb file under the 'pkg' directory.
+
+## Building on Windows
+
+From Windows 10, install ruby, msys2, ruby-devkit, wixtoolset, git. Add the following command to the the preparation steps before executing the `build` command.
+```
+xz -d local/cache/*.xz
+```
 
 ## Building on OS X
 

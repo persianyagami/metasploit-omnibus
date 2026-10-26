@@ -15,7 +15,7 @@
 #
 
 name "ruby-windows"
-default_version "2.6.6-1"
+default_version "3.4.12-1"
 
 if windows_arch_i386?
   relative_path "rubyinstaller-#{version}-x86"
@@ -46,10 +46,55 @@ else
   version "2.6.6-1" do
     source sha256: "fe5ca2e3ceffa1a98051a85b4028a2bb57332ad4dbb439e377c5775e463096e3"
   end
+  version "2.7.2-1" do
+    source sha256: "925cc01d453951d1d0c077c44cec90849afc8d23e45946e19ecd3aaabc0c0ab3"
+  end
+
+  version "3.0.2-1" do
+    source sha256: "92894c0488ec7eab02b2ffc61a8945c4bf98d69561e170927ec30d60bee57898"
+  end
+
+  version "3.1.4-1" do
+    source sha256: "6701088607ea4b587a31af76d75cb3fe9f7bcd75fc175cffcca22369ebb6331d"
+  end
+
+  version "3.1.5-1" do
+    source sha256: "f31eece5b5c64563829117d41c09ed87572c595e5d64a525d49c1dd9c50dccca"
+  end
+
+  version "3.2.5-1" do
+    source sha256: "3e17f7e60834cfac4b2aae13677c19d3222b52bee328c3c22629246c00cd543c"
+  end
+
+  version "3.2.8-1" do
+    source sha256: "e37172bc960a22b1fda9603bea617625b5a1af48d009844818e85eaa00684962"
+  end
+
+  version "3.3.8-1" do
+    source sha256: "2aa7d8fa7bc527b7373b91c75fae9549f5926fa918ba808b8744c1f0d8ad9f52"
+  end
+
+  version "3.4.4-2" do
+    source sha256: "29fe655a8bee91d6466e631ae612142a1c5d68d46323ccca7f35add2dbb28b51"
+  end
+
+  version "3.4.9-1" do
+    source sha256: "4375268618b61dadf53bf8e54beaca74ea30580c90d3c47ea9f2a134bd3e494e"
+  end
+
+  version "4.0.5-1" do
+    source sha256: "74e31613fc71e6e23431dfc4d8b6ec2818a4dc1fd16e0983b074144c16719c8b"
+  end
 
   source url: "https://github.com/oneclick/rubyinstaller2/releases/download/rubyinstaller-#{version}/rubyinstaller-#{version}-x64.7z"
+
+  version "3.4.12-1" do
+    source sha256: "3806f164377824bcb17e1cf39b17d967e2bdc01e8547ce0254cd786dbe2cfe13",
+           url: "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-#{version}/rubyinstaller-#{version}-x64.7z"
+  end
 end
 
 build do
   sync "#{project_dir}/", "#{install_dir}/embedded"
 end
+

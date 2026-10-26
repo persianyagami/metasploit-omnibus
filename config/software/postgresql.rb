@@ -15,7 +15,7 @@
 #
 
 name "postgresql"
-default_version "9.6.7"
+default_version "16.14"
 
 license "PostgreSQL"
 license_file "COPYRIGHT"
@@ -27,6 +27,13 @@ dependency "libedit"
 dependency "libuuid" unless mac_os_x?
 dependency "ncurses"
 dependency "config_guess"
+
+version("16.14")  { source sha256: "f6d077142737920858ce958ccdb75c6ee137a63b5b0853c70693d401ac7e3471" }
+version("13.6")   { source sha256: "bafc7fa3d9d4da8fe71b84c63ba8bdfe8092935c30c0aa85c24b2c08508f67fc" }
+
+version "9.6.20" do
+  source sha256: "3d08cba409d45ab62d42b24431a0d55e7537bcd1db2d979f5f2eefe34d487bb6"
+end
 
 version "9.6.7" do
   source sha256: "2ebe3df3c1d1eab78023bdc3ffa55a154aa84300416b075ef996598d78a624c6"
@@ -50,6 +57,8 @@ relative_path "postgresql-#{version}"
 
 build do
   env = with_standard_compiler_flags(with_embedded_path)
+  # https://stackoverflow.com/questions/68379786/building-postgres-from-source-throws-utils-errcodes-h-file-not-found-when-ca
+  env['MAKELEVEL'] = '0'
 
   update_config_guess(target: "config")
 
@@ -57,6 +66,7 @@ build do
           " --prefix=#{install_dir}/embedded" \
           " --with-libedit-preferred" \
           " --with-openssl" \
+          " --without-icu" \
           " --with-uuid=e2fs" \
           " --with-includes=#{install_dir}/embedded/include" \
           " --with-libraries=#{install_dir}/embedded/lib", env: env

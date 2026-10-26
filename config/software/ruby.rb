@@ -1,5 +1,5 @@
 #
-# Copyright 2012-2020, Chef Software Inc.
+# Copyright:: Copyright (c) Chef Software Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# do_not_auto_update
 
 name "ruby"
 
@@ -25,42 +26,73 @@ skip_transitive_dependency_licensing true
 # the default versions should always be the latest release of ruby
 # if you consume this definition it is your responsibility to pin
 # to the desired version of ruby. don't count on this not changing.
-default_version "2.6.6"
+default_version "3.4.12"
 
 dependency "zlib"
 dependency "openssl"
 dependency "libffi"
 dependency "libyaml"
 
-version("2.7.1")      { source sha256: "d418483bdd0000576c1370571121a6eb24582116db0b7bb2005e90e250eae418" }
-version("2.7.0")      { source sha256: "8c99aa93b5e2f1bc8437d1bbbefd27b13e7694025331f77245d0c068ef1f8cbe" }
+# we build omnibus packages on freebsd 11 and use the packages on freebsd 11, 12 and 13.
+# the ruby executable has been linking to freebsds system's ncurses library files.
+# freebsd 13 system's ncurses library files have a different name than freebsd 11 and 12
+# which causes the ruby executable to fail.
+# adding ncurses as a dependency for freebsd prevents the ruby executable from linking to the
+# system's ncurses library files thereby allowing the package built on freebsd 11 to work on freebsd 13.
+dependency "ncurses" if freebsd?
 
-version("2.6.6")      { source sha256: "364b143def360bac1b74eb56ed60b1a0dca6439b00157ae11ff77d5cd2e92291" }
-version("2.6.5")      { source sha256: "66976b716ecc1fd34f9b7c3c2b07bbd37631815377a2e3e85a5b194cfdcbed7d" }
-version("2.6.4")      { source sha256: "4fc1d8ba75505b3797020a6ffc85a8bcff6adc4dabae343b6572bf281ee17937" }
-version("2.6.3")      { source sha256: "577fd3795f22b8d91c1d4e6733637b0394d4082db659fccf224c774a2b1c82fb" }
-version("2.6.2")      { source sha256: "a0405d2bf2c2d2f332033b70dff354d224a864ab0edd462b7a413420453b49ab" }
-version("2.6.1")      { source sha256: "17024fb7bb203d9cf7a5a42c78ff6ce77140f9d083676044a7db67f1e5191cb8" }
+# version_list: url=https://cache.ruby-lang.org/pub/ruby/ filter=*.tar.gz
 
-version("2.5.8")      { source sha256: "6c0bdf07876c69811a9e7dc237c43d40b1cb6369f68e0e17953d7279b524ad9a" }
-version("2.5.7")      { source sha256: "0b2d0d5e3451b6ab454f81b1bfca007407c0548dea403f1eba2e429da4add6d4" }
-version("2.5.6")      { source sha256: "1d7ed06c673020cd12a737ed686470552e8e99d72b82cd3c26daa3115c36bea7" }
-version("2.5.5")      { source sha256: "28a945fdf340e6ba04fc890b98648342e3cccfd6d223a48f3810572f11b2514c" }
-version("2.5.4")      { source sha256: "0e4042bce749352dfcf1b9e3013ba7c078b728f51f8adaf6470ce37675e3cb1f" }
-version("2.5.3")      { source sha256: "9828d03852c37c20fa333a0264f2490f07338576734d910ee3fd538c9520846c" }
-version("2.5.1")      { source sha256: "dac81822325b79c3ba9532b048c2123357d3310b2b40024202f360251d9829b1" }
-version("2.5.0")      { source sha256: "46e6f3630f1888eb653b15fa811d77b5b1df6fd7a3af436b343cfe4f4503f2ab" }
+version("3.4.12")     { source sha256: "5e5d85ad93b0adcccbad47733680f4892bd0078e3342437f7babce01c1872479" }
+version("3.4.4")      { source sha256: "a0597bfdf312e010efd1effaa8d7f1d7833146fdc17950caa8158ffa3dcbfa85" }
+version("3.3.8")      { source sha256: "5ae28a87a59a3e4ad66bc2931d232dbab953d0aa8f6baf3bc4f8f80977c89cab" }
+version("3.2.8")      { source sha256: "77acdd8cfbbe1f8e573b5e6536e03c5103df989dc05fa68c70f011833c356075" }
+version("3.2.5")      { source sha256: "ef0610b498f60fb5cfd77b51adb3c10f4ca8ed9a17cb87c61e5bea314ac34a16" }
+version("3.2.2")      { source sha256: "96c57558871a6748de5bc9f274e93f4b5aad06cd8f37befa0e8d94e7b8a423bc" }
+version("3.2.0")      { source sha256: "daaa78e1360b2783f98deeceb677ad900f3a36c0ffa6e2b6b19090be77abc272" }
+version("3.1.4")      { source sha256: "a3d55879a0dfab1d7141fdf10d22a07dbf8e5cdc4415da1bde06127d5cc3c7b6" }
+version("3.1.5")      { source sha256: "3685c51eeee1352c31ea039706d71976f53d00ab6d77312de6aa1abaf5cda2c5" }
+version("3.1.3")      { source sha256: "5ea498a35f4cd15875200a52dde42b6eb179e1264e17d78732c3a57cd1c6ab9e" }
+version("3.1.2")      { source sha256: "61843112389f02b735428b53bb64cf988ad9fb81858b8248e22e57336f24a83e" }
+version("3.1.1")      { source sha256: "fe6e4782de97443978ddba8ba4be38d222aa24dc3e3f02a6a8e7701c0eeb619d" }
 
-version("2.4.10")     { source sha256: "93d06711795bfb76dbe7e765e82cdff3ddf9d82eff2a1f24dead9bb506eaf2d0" }
-version("2.4.9")      { source sha256: "f99b6b5e3aa53d579a49eb719dd0d3834d59124159a6d4351d1e039156b1c6ae" }
+version("3.0.6")      { source sha256: "6e6cbd490030d7910c0ff20edefab4294dfcd1046f0f8f47f78b597987ac683e" }
+version("3.0.5")      { source sha256: "9afc6380a027a4fe1ae1a3e2eccb6b497b9c5ac0631c12ca56f9b7beb4848776" }
+version("3.0.4")      { source sha256: "70b47c207af04bce9acea262308fb42893d3e244f39a4abc586920a1c723722b" }
+version("3.0.3")      { source sha256: "3586861cb2df56970287f0fd83f274bd92058872d830d15570b36def7f1a92ac" }
+version("3.0.2")      { source sha256: "5085dee0ad9f06996a8acec7ebea4a8735e6fac22f22e2d98c3f2bc3bef7e6f1" }
+version("3.0.1")      { source sha256: "369825db2199f6aeef16b408df6a04ebaddb664fb9af0ec8c686b0ce7ab77727" }
+
+version("2.7.7")      { source sha256: "e10127db691d7ff36402cfe88f418c8d025a3f1eea92044b162dd72f0b8c7b90" }
+version("2.7.6")      { source sha256: "e7203b0cc09442ed2c08936d483f8ac140ec1c72e37bb5c401646b7866cb5d10" }
+version("2.7.5")      { source sha256: "2755b900a21235b443bb16dadd9032f784d4a88f143d852bc5d154f22b8781f1" }
+version("2.7.4")      { source sha256: "3043099089608859fc8cce7f9fdccaa1f53a462457e3838ec3b25a7d609fbc5b" }
+version("2.7.3")      { source sha256: "8925a95e31d8f2c81749025a52a544ea1d05dad18794e6828709268b92e55338" }
+
+version("2.6.10")     { source sha256: "0dc609f263d49c4176d5725deefc337273676395985b5e017789373e8cadf16e" }
+version("2.6.9")      { source sha256: "eb7bae7aac64bf9eb2153710a4cafae450ccbb62ae6f63d573e1786178b0efbb" }
+version("2.6.8")      { source sha256: "1807b78577bc08596a390e8a41aede37b8512190e05c133b17d0501791a8ca6d" }
+version("2.6.7")      { source sha256: "e4227e8b7f65485ecb73397a83e0d09dcd39f25efd411c782b69424e55c7a99e" }
 
 source url: "https://cache.ruby-lang.org/pub/ruby/#{version.match(/^(\d+\.\d+)/)[0]}/ruby-#{version}.tar.gz"
+internal_source url: "#{ENV["ARTIFACTORY_REPO_URL"]}/#{name}/#{name}-#{version}.tar.gz",
+                authorization: "X-JFrog-Art-Api:#{ENV["ARTIFACTORY_TOKEN"]}"
+
+# In order to pass notarization we need to sign any binaries and libraries included in the package.
+# This makes sure we include and bins and libs that are brought in by gems.
+semver = Gem::Version.create(version).segments
+ruby_mmv = "#{semver[0..1].join(".")}.0"
+ruby_dir = "#{install_dir}/embedded/lib/ruby/#{ruby_mmv}"
+gem_dir = "#{install_dir}/embedded/lib/ruby/gems/#{ruby_mmv}"
+bin_dirs bin_dirs.concat ["#{gem_dir}/gems/*/bin/**"]
+lib_dirs ["#{ruby_dir}/**", "#{gem_dir}/extensions/**", "#{gem_dir}/gems/*", "#{gem_dir}/gems/*/lib/**", "#{gem_dir}/gems/*/ext/**"]
 
 relative_path "ruby-#{version}"
 
 env = with_standard_compiler_flags(with_embedded_path)
 
-jemalloc_required = linux? || windows? || mac_os_x?
+# do not remove - Rapid7 custom - do not remove:
+jemalloc_required = (linux? && !arm?) || mac_os_x?
 if jemalloc_required
   dependency "jemalloc"
 end
@@ -72,8 +104,9 @@ if mac_os_x?
   # would be harmless, except that autoconf treats any output to stderr as
   # a failure when it makes a test program to check your CFLAGS (regardless
   # of the actual exit code from the compiler).
-  env["CFLAGS"] << " -I#{install_dir}/embedded/include/ncurses -arch x86_64 -m64 -O3 -g -pipe -Qunused-arguments"
-  env["LDFLAGS"] << " -arch x86_64"
+  arch = intel? ? "x86_64" : "arm64"
+  env["CFLAGS"] << " -I#{install_dir}/embedded/include/ncurses -arch #{arch} -m64 -O3 -g -pipe -Qunused-arguments"
+  env["LDFLAGS"] << " -arch #{arch}"
 elsif freebsd?
   # Stops "libtinfo.so.5.9: could not read symbols: Bad value" error when
   # compiling ext/readline. See the following for more info:
@@ -93,10 +126,13 @@ elsif aix?
   env["SOLIBS"] = "-lm -lc"
   # need to use GNU m4, default m4 doesn't work
   env["M4"] = "/opt/freeware/bin/m4"
-elsif solaris_11?
-  env["CFLAGS"] << " -std=c99"
-  env["CPPFLAGS"] << " -D_XOPEN_SOURCE=600 -D_XPG6"
+elsif solaris2?
+  env["CXXFLAGS"] = "#{env["CXXFLAGS"]} -std=c++0x"
 elsif windows?
+  # this forces ruby >= 3.0 to pick up the gcc in the devkit rather than the cc in /opt/omnibus-toolchain
+  # which is necessary for mkmf.rb to be able to correctly build native gems.  in an ideal world the compilation
+  # environment in omnibus-toolchain would probably need to look a little more identical to the devkit.
+  env["CC"] = "gcc"
   env["CFLAGS"] = "-I#{install_dir}/embedded/include -DFD_SETSIZE=2048"
   if windows_arch_i386?
     env["CFLAGS"] << " -m32 -march=i686 -O3"
@@ -114,13 +150,20 @@ build do
   patch_env = env.dup
   patch_env["PATH"] = "/opt/freeware/bin:#{env["PATH"]}" if aix?
 
-  # remove the warning that the win32 api is going away.
-  if windows?
-    if version.satisfies?(">= 2.6")
-      patch source: "ruby-win32_warning_removal_26plus.patch", plevel: 1, env: patch_env
+  if version.satisfies?("~> 3.0.0")
+    case version
+    when "3.0.1"
+      patch source: "ruby-3.0.1-configure.patch", plevel: 1, env: patch_env
+    when "3.0.5", "3.0.6"
+      patch source: "ruby-3.0.5-configure.patch", plevel: 1, env: patch_env
     else
-      patch source: "ruby-win32_warning_removal_25_and_below.patch", plevel: 1, env: patch_env
+      patch source: "ruby-3.0.2-configure.patch", plevel: 1, env: patch_env
     end
+  end
+
+  # remove the warning that the win32 api is going away.
+  if windows? && version.satisfies?("< 3.0")
+    patch source: "ruby-win32_warning_removal.patch", plevel: 1, env: patch_env
   end
 
   # RHEL6 has a base compiler that does not support -fstack-protector-strong, but we
@@ -130,7 +173,7 @@ build do
   # they try to install native gems.  So, we have to hack this up to avoid using
   # that flag on RHEL6.
   #
-  if rhel? && platform_version.satisfies?("< 7") && version.satisfies?(">= 2.6")
+  if rhel? && platform_version.satisfies?("< 7")
     patch source: "ruby-no-stack-protector-strong.patch", plevel: 1, env: patch_env
   end
 
@@ -141,7 +184,20 @@ build do
   # over the top of it.  AFAIK no sane ruby code should need to do that, and the
   # cost of this behavior in core ruby is enormous.
   #
-  patch source: "ruby-fast-load_26.patch", plevel: 1, env: patch_env
+  if version.satisfies?("< 3.1")
+    patch source: "ruby-fast-load_26.patch", plevel: 1, env: patch_env
+  elsif version.satisfies?("> 3.4")
+    patch source: "ruby-faster-load_34.patch", plevel: 1, env: patch_env
+  else
+    patch source: "ruby-fast-load_31.patch", plevel: 1, env: patch_env
+  end
+
+  # this removes a checks for windows nano in the win32-ole files.
+  # windows nano is a dead platform and not supported by chef so we can avoid
+  # registry lookups by patching away this code
+  if windows?
+    patch source: "remove_nano.patch", plevel: 1, env: patch_env
+  end
 
   # accelerate requires by removing a File.expand_path
   #
@@ -155,8 +211,14 @@ build do
   if version.satisfies?("~> 2.6.0")
     patch source: "ruby-faster-load_26.patch", plevel: 1, env: patch_env
   end
-  if version.satisfies?(">= 2.7")
-    patch source: "ruby-faster-load_27.patch", plevel: 1, env: patch_env
+  if version.satisfies?(">=3.4")
+    # No patch available for ruby-faster-load - can be added
+  elsif version.satisfies?(">=3.3")
+    patch source: "ruby-faster-load_33.patch", plevel: 1, env: patch_env
+  else
+    if version.satisfies?(">= 2.7")
+      patch source: "ruby-faster-load_27.patch", plevel: 1, env: patch_env
+    end
   end
 
   # disable libpath in mkmf across all platforms, it trolls omnibus and
@@ -170,54 +232,34 @@ build do
   # Also, fix paths emitted in the makefile on windows on both msys and msys2.
   patch source: "ruby-mkmf.patch", plevel: 1, env: patch_env
 
-  # RHEL 6's gcc doesn't support `#pragma GCC diagnostic` inside functions, so
-  # we'll guard their inclusion more specifically. As of 2018-01-25 this is fixed
-  # upstream and ought to be in 2.5.1
-  if rhel? &&
-      platform_version.satisfies?("< 7") &&
-      (version == "2.5.0")
-    patch source: "prelude_25_el6_no_pragma.patch", plevel: 0, env: patch_env
-  end
-
-  # Backporting a 2.6.0 fix to 2.5.1 (and 2.4.4 for ChefDK 2). This allows us to build Nokogiri 1.8.3.
-  # Basically we only include `-Werror` linker warnings when building native gems if we are on Windows.
-  # This prevents some "expected" warnings from failing the build.
-  if version == "2.5.1" || version == "2.4.4"
-    patch source: "ruby-only-compiler-warnings-on-windows.patch", plevel: 1, env: patch_env
-  end
-
   configure_command = ["--with-out-ext=dbm,readline",
                        "--enable-shared",
+                       # do not remove - Rapid7 custom - do not remove:
                        "--enable-load-relative",
                        "--disable-install-doc",
                        "--without-gmp",
                        "--without-gdbm",
                        "--without-tk",
-                       "--disable-dtrace"]
+                       "--disable-dtrace",
+                       "--disable-jit-support"]
   configure_command << "--with-bundled-md5" if fips_mode?
+  # do not remove - Rapid7 custom - do not remove:
   configure_command << "--with-jemalloc" if jemalloc_required
 
-  # jit doesn't compile on all platforms in 2.6.0
-  # we should evaluate this when new releases come out to see if we can turn it back on
-  configure_command << "--disable-jit-support" if version.satisfies?(">= 2.6")
+  # resolve C99 code accidentally introduced in Ruby 2.6.7 and it's still in 2.6.8 :(
+  patch source: "ruby-2.6.7_c99.patch", plevel: 1, env: patch_env if version.satisfies?("~> 2.6.7", "< 2.6.10")
 
   if aix?
     # need to patch ruby's configure file so it knows how to find shared libraries
-    if version.satisfies?(">= 2.6")
-      patch source: "ruby-aix-configure_26_and_later.patch", plevel: 1, env: patch_env
-      if version.satisfies?("~> 2.6.4")
-        patch source: "ruby-2.6.4-bug14834.patch", plevel: 1, env: patch_env
-      end
-    else
-      patch source: "ruby-aix-configure_pre26.patch", plevel: 1, env: patch_env
-    end
+    patch source: "ruby-aix-configure_26_and_later.patch", plevel: 1, env: patch_env
+
     # have ruby use zlib on AIX correctly
     patch source: "ruby_aix_openssl.patch", plevel: 1, env: patch_env
     # AIX has issues with ssl retries, need to patch to have it retry
-    patch source: "ruby_aix_2_1_3_ssl_EAGAIN.patch", plevel: 1, env: patch_env
+    patch source: "ruby_aix_ssl_EAGAIN.patch", plevel: 1, env: patch_env
     # the next two patches are because xlc doesn't deal with long vs int types well
-    patch source: "ruby-aix-atomic.patch", plevel: 1, env: patch_env
-    patch source: "ruby-aix-vm-core.patch", plevel: 1, env: patch_env
+    patch source: "ruby-aix-atomic.patch", plevel: 1, env: patch_env if version.satisfies?("< 3.0")
+    patch source: "ruby-aix-vm-core.patch", plevel: 1, env: patch_env if version.satisfies?("< 3.0")
 
     # per IBM, just enable pthread
     configure_command << "--enable-pthread"
@@ -244,7 +286,8 @@ build do
     # force that API off.
     configure_command << "ac_cv_func_arc4random_buf=no"
   elsif windows?
-    configure_command << " debugflags=-g"
+    configure_command << "debugflags=-g"
+    configure_command << "--with-winnt-ver=0x0602" # the default is 0x0600 which is Vista. 602 is Windows 8 (2012)
   else
     configure_command << "--with-opt-dir=#{install_dir}/embedded"
   end
@@ -255,6 +298,7 @@ build do
   env["PKG_CONFIG"] = "/bin/true" if aix?
 
   configure(*configure_command, env: env)
+
   make "-j #{workers}", env: env
   make "-j #{workers} install", env: env
 
@@ -274,7 +318,9 @@ build do
 
     dlls.each do |dll|
       mingw = ENV["MSYSTEM"].downcase
-      msys_path = ENV["OMNIBUS_TOOLCHAIN_INSTALL_DIR"] ? "#{ENV["OMNIBUS_TOOLCHAIN_INSTALL_DIR"]}/embedded/bin" : "C:/msys2"
+      # Starting omnibus-toolchain version 1.1.115 we do not build msys2 as a part of omnibus-toolchain anymore, but pre install it in image
+      # so here we set the path to default install of msys2 first and default to OMNIBUS_TOOLCHAIN_INSTALL_DIR for backward compatibility
+      msys_path = ENV["MSYS2_INSTALL_DIR"] ? "#{ENV["MSYS2_INSTALL_DIR"]}" : "#{ENV["OMNIBUS_TOOLCHAIN_INSTALL_DIR"]}/embedded/bin"
       windows_path = "#{msys_path}/#{mingw}/bin/#{dll}.dll"
       if File.exist?(windows_path)
         copy windows_path, "#{install_dir}/embedded/bin/#{dll}.dll"
@@ -283,7 +329,7 @@ build do
       end
     end
 
-    %w{ erb gem irb rdoc ri }.each do |cmd|
+    %w{ erb gem irb rdoc ri bundle }.each do |cmd|
       copy "#{project_dir}/bin/#{cmd}", "#{install_dir}/embedded/bin/#{cmd}"
     end
 
